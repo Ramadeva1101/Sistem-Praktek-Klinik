@@ -1,22 +1,27 @@
 <?php
 
 namespace App\Filament\Resources;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\ViewField;
 use Filament\Forms;
 use Filament\Tables;
+use App\Models\Kasir;
 use Filament\Forms\Form;
 use App\Models\Kunjungan;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 use Filament\Resources\Resource;
+use Illuminate\Support\Facades\DB;
 use Filament\Tables\Actions\Action;
-use Filament\Forms\Components\Select;
+use Illuminate\Support\Facades\Log;
 use Filament\Support\Enums\MaxWidth;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Textarea;
+use Filament\Navigation\NavigationItem;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ViewField;
 use Filament\Notifications\Notification;
-use App\Filament\Resources\KunjunganResource\Pages;
 use Filament\Tables\Columns\TextInputColumn;
+use App\Filament\Resources\KunjunganResource\Pages;
 
 class KunjunganResource extends Resource
 {
@@ -129,7 +134,7 @@ class KunjunganResource extends Resource
                     })
                     ->modalWidth(MaxWidth::Medium),
 
-                    Action::make('view')
+                Action::make('view')
                     ->label('View')
                     ->icon('heroicon-m-eye')
                     ->color('warning')
@@ -141,37 +146,35 @@ class KunjunganResource extends Resource
                                 TextInput::make('kode_pelanggan')
                                     ->label('Kode Pelanggan')
                                     ->disabled()
-                                    ->default(fn ($record) => $record->kode_pelanggan),  // Memasukkan data pasien
+                                    ->default(fn ($record) => $record->kode_pelanggan),
                                 TextInput::make('nama')
                                     ->label('Nama Pasien')
                                     ->disabled()
-                                    ->default(fn ($record) => $record->nama),  // Memasukkan data pasien
+                                    ->default(fn ($record) => $record->nama),
                                 Forms\Components\DatePicker::make('tanggal_lahir')
                                     ->label('Tanggal Lahir')
                                     ->disabled()
-                                    ->default(fn ($record) => $record->tanggal_lahir),  // Memasukkan data pasien
+                                    ->default(fn ($record) => $record->tanggal_lahir),
                                 TextInput::make('jenis_kelamin')
                                     ->label('Jenis Kelamin')
                                     ->disabled()
-                                    ->default(fn ($record) => $record->jenis_kelamin),  // Memasukkan data pasien
+                                    ->default(fn ($record) => $record->jenis_kelamin),
                                 Textarea::make('alamat')
                                     ->label('Alamat')
                                     ->disabled()
                                     ->columnSpanFull()
-                                    ->default(fn ($record) => $record->alamat),  // Memasukkan data pasien
+                                    ->default(fn ($record) => $record->alamat),
                                 Forms\Components\DateTimePicker::make('tanggal_kunjungan')
                                     ->label('Tanggal Kunjungan')
                                     ->disabled()
-                                    ->default(fn ($record) => $record->tanggal_kunjungan),  // Memasukkan data pasien
+                                    ->default(fn ($record) => $record->tanggal_kunjungan),
                             ])
                             ->columns(2),
 
                         Section::make('Obat yang Diberikan')
                             ->schema([
-                                TextInputColumn::make('selected_obat')
-
+                                Textarea::make('selected_obat')
                                     ->disabled()
-
                                     ->default(function ($record) {
                                         return $record->obats->map(function ($obat) {
                                             return $obat->nama_obat . ' (Rp ' . number_format($obat->harga, 0, ',', '.') . ')';
@@ -181,10 +184,8 @@ class KunjunganResource extends Resource
 
                         Section::make('Pemeriksaan yang Dilakukan')
                             ->schema([
-                                TextInput::make('selected_pemeriksaan')
-
+                                Textarea::make('selected_pemeriksaan')
                                     ->disabled()
-
                                     ->default(function ($record) {
                                         return $record->pemeriksaans->map(function ($pemeriksaan) {
                                             return $pemeriksaan->nama_pemeriksaan . ' (Rp ' . number_format($pemeriksaan->harga_pemeriksaan, 0, ',', '.') . ')';
@@ -195,46 +196,97 @@ class KunjunganResource extends Resource
                         Section::make('Total Biaya')
                             ->schema([
                                 TextInput::make('total_cost')
-
                                     ->prefix('Rp')
                                     ->disabled()
                                     ->default(function (Kunjungan $record): string {
                                         $totalObat = $record->obats->sum('harga');
                                         $totalPemeriksaan = $record->pemeriksaans->sum('harga_pemeriksaan');
                                         $total = $totalObat + $totalPemeriksaan;
-
                                         return number_format($total, 0, ',', '.');
                                     }),
                             ]),
                     ])
                     ->modalSubmitAction(false),
+
                 Action::make('selesai')
                     ->label('Selesai')
                     ->icon('heroicon-m-check-circle')
                     ->color('success')
-                    ->action(function ($record) {
+                    ->action(function (Kunjungan $record) {
+                        DB::beginTransaction();
                         try {
-                            $record->delete();
+                            Log::info('Memulai proses pemindahan data ke Kasir');
+
+                            // Hitung total biaya
+                            $totalBiaya = $record->obats->sum('harga') + $record->pemeriksaans->sum('harga_pemeriksaan');
+
+                            // Generate ID Pembayaran
+                            $idPembayaran = 'INV-' . strtoupper(Str::random(8));
+
+                            // Buat record baru di tabel kasir
+                            $kasir = Kasir::create([
+                                'kode_pelanggan' => $record->kode_pelanggan,
+                                'nama' => $record->nama,
+                                'jumlah_biaya' => $totalBiaya,
+                                'status_pembayaran' => 'Belum Dibayar',
+                                'kunjungan_id' => $record->id,
+                                'tanggal_kunjungan' => $record->created_at,
+                                'tanggal_pembayaran' => null,
+                                'id_pembayaran' => $idPembayaran,
+                                'metode_pembayaran' => null,
+                            ]);
+
+                            if (!$kasir) {
+                                throw new \Exception('Gagal membuat record kasir');
+                            }
+
+                            // Hapus data pasien dari tabel pasien
+                            DB::table('kunjungans')->where('kode_pelanggan', $record->kode_pelanggan)->delete();
+
+                            DB::commit();
+
+                            Log::info('Data berhasil dipindahkan ke Kasir dan pasien dihapus', [
+                                'kasir_id' => $kasir->id,
+                                'kode_pelanggan' => $record->kode_pelanggan,
+                                'id_pembayaran' => $idPembayaran
+                            ]);
+
                             Notification::make()
-                                ->title('Berhasil')
+                                ->title('Kunjungan berhasil diselesaikan dan data dipindahkan ke kasir')
                                 ->success()
                                 ->send();
+
+                            // Refresh halaman setelah berhasil
+                            return redirect(KunjunganResource::getUrl());
+
                         } catch (\Exception $e) {
+                            DB::rollback();
+                            Log::error('Terjadi kesalahan saat memindahkan data: ' . $e->getMessage());
+
                             Notification::make()
-                                ->title('Terjadi kesalahan saat menghapus data')
+                                ->title('Terjadi kesalahan saat memindahkan data')
+                                ->body($e->getMessage())
                                 ->danger()
                                 ->send();
                         }
                     })
                     ->requiresConfirmation()
                     ->modalHeading('Selesaikan Kunjungan')
-                    ->modalDescription('Apakah Anda yakin ingin menyelesaikan kunjungan ini? Data akan dihapus setelah selesai.')
-                    ->modalSubmitActionLabel('Ya, Selesaikan')
-                    ->modalCancelActionLabel('Batal'),
-            ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]);
+                    ->modalDescription('Data pasien akan dipindahkan ke kasir untuk proses pembayaran dan data pasien akan dihapus'),
+                    Tables\Actions\DeleteAction::make()
+                    ->label('Delete')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                ]);
+
+
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            // Define relations here if needed
+        ];
     }
 
     public static function getPages(): array
@@ -242,7 +294,20 @@ class KunjunganResource extends Resource
         return [
             'index' => Pages\ListKunjungans::route('/'),
             'create' => Pages\CreateKunjungan::route('/create'),
-            'edit' => Pages\EditKunjungan::route('/{record}/edit'),
+            // 'edit' => Pages\EditKunjungan::route('/{record}/edit'),
         ];
     }
+    public static function getNavigationItems(): array
+    {
+        return in_array(auth()->user()?->role, ['admin', 'dokter'])
+            ? [
+                NavigationItem::make('Kunjungan')
+
+                ->url(static::getUrl())
+                    ->icon('heroicon-o-users')
+                    ->group('Kegiatan')
+            ]
+            : [];
+    }
 }
+

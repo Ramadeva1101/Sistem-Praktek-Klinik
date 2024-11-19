@@ -1,11 +1,12 @@
 <?php
-
+// app/Models/Kunjungan.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Kunjungan extends Model
 {
@@ -19,13 +20,19 @@ class Kunjungan extends Model
         'tanggal_lahir',
         'jenis_kelamin',
         'alamat',
-        'tanggal_kunjungan'
+        'tanggal_kunjungan',
+        'status'
     ];
 
     protected $casts = [
         'tanggal_kunjungan' => 'datetime',
         'tanggal_lahir' => 'date'
     ];
+
+    public function kasir(): HasOne
+    {
+        return $this->hasOne(Kasir::class);
+    }
 
     public function pasien(): BelongsTo
     {

@@ -79,7 +79,8 @@ class PemeriksaanResource extends Resource
             ? [
                 NavigationItem::make('Pemeriksaan')
                     ->url(static::getUrl())
-                    ->icon('heroicon-o-rectangle-stack'),
+                    ->icon('heroicon-o-document-text')
+                    ->group('Master Data')
             ]
             : [];
     }

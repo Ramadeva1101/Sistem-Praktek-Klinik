@@ -17,7 +17,12 @@ use App\Filament\Resources\KunjunganResource;
 class PasienResource extends Resource
 {
     protected static ?string $model = Pasien::class;
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
+    protected static ?string $navigationLabel = 'Kasir';
+    protected static ?string $navigationGroup = 'Transaksi';
+
+
+
 
     public static function form(Form $form): Form
     {
@@ -82,8 +87,14 @@ class PasienResource extends Resource
                         ->success()
                         ->send();
                 })
-                ->successRedirectUrl(fn () => KunjunganResource::getUrl('index'))
+                ->successRedirectUrl(fn () => KunjunganResource::getUrl('index')),
+
+                Tables\Actions\DeleteAction::make()
+                ->label('Delete')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
             ])
+
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
@@ -103,7 +114,7 @@ class PasienResource extends Resource
         return [
             'index' => Pages\ListPasiens::route('/'),
             'create' => Pages\CreatePasien::route('/create'),
-            'edit' => Pages\EditPasien::route('/{record}/edit'),
+          
         ];
     }
 
@@ -113,7 +124,9 @@ class PasienResource extends Resource
             ? [
                 NavigationItem::make('Pasien')
                     ->url(static::getUrl())
-                    ->icon('heroicon-o-rectangle-stack'),
+                    ->icon('heroicon-o-user-group')
+                    ->group('Master Data')
+
             ]
             : [];
     }

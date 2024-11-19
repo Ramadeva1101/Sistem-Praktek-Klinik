@@ -21,7 +21,7 @@ class PenggunaResource extends Resource
 {
     protected static ?string $model = Pengguna::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+  
 
     public static function form(Form $form): Form
     {
@@ -96,7 +96,7 @@ class PenggunaResource extends Resource
             ? [
                 NavigationItem::make('Pengguna')
                     ->url(static::getUrl())
-                    ->icon('heroicon-o-rectangle-stack'),
+                    ->icon('heroicon-o-user'),
             ]
             : [];
     }

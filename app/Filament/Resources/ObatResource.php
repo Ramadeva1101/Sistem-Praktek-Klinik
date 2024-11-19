@@ -17,7 +17,7 @@ class ObatResource extends Resource
 {
     protected static ?string $model = Obat::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
 
     public static function form(Form $form): Form
     {
@@ -73,7 +73,8 @@ class ObatResource extends Resource
             ? [
                 NavigationItem::make('Obat')
                     ->url(static::getUrl())
-                    ->icon('heroicon-o-rectangle-stack'),
+                    ->icon('heroicon-o-beaker')
+                    ->group('Master Data')
             ]
             : [];
     }
