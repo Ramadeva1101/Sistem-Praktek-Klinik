@@ -4,7 +4,10 @@ return [
 'resources' => [
     'namespace' => 'App\\Filament\\Resources',
     'path' => app_path('Filament/Resources'),
-    'register' => [],
+    'register' => [
+        // ... resource lainnya ...
+        \App\Filament\Resources\DetailPemeriksaanKunjunganResource::class,
+    ],
 ],
     /*
     |--------------------------------------------------------------------------
@@ -74,5 +77,17 @@ return [
     */
 
     'livewire_loading_delay' => 'default',
+
+    'path' => 'praktek-klinik',
+    'domain' => null,
+    'home_url' => '/praktek-klinik',
+
+    'widgets' => [
+        'default' => [
+            'App\Filament\Widgets\DokterStatsWidget',
+            'App\Filament\Widgets\LatestKunjunganWidget',
+            // ... widget lainnya
+        ],
+    ],
 
 ];

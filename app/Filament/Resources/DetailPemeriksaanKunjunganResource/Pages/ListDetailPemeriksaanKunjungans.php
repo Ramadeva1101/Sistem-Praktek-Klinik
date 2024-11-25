@@ -10,10 +10,4 @@ class ListDetailPemeriksaanKunjungans extends ListRecords
 {
     protected static string $resource = DetailPemeriksaanKunjunganResource::class;
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\CreateAction::make(),
-        ];
-    }
 }

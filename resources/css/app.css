@@ -1,0 +1,34 @@
+/* Mengatur container utama */
+.fi-layout {
+    --sidebar-width: 16rem !important;
+}
+
+.fi-main {
+    @apply max-w-none !important;
+}
+
+.fi-main-ctn {
+    max-width: none !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+.fi-ta-ctn {
+    @apply max-w-none !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    border-radius: 1rem !important;
+}
+
+.fi-ta-table {
+    width: 100% !important;
+}
+
+.fi-ta-content {
+    padding: 0 !important;
+}
+
+/* Mengatur padding content */
+.fi-body {
+    padding: 1rem !important;
+}

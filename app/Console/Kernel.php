@@ -12,7 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Jalankan setiap menit untuk testing
+        $schedule->command('kasir:delete-old')
+            ->hourly()
+            ->appendOutputTo(storage_path('logs/kasir-cleanup.log'));
     }
 
     /**
@@ -23,5 +26,13 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
+    }
+
+    /**
+     * Get the timezone that should be used by default for scheduled events.
+     */
+    protected function scheduleTimezone(): string
+    {
+        return 'Asia/Makassar';
     }
 }

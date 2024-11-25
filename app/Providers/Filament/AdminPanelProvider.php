@@ -2,21 +2,33 @@
 
 namespace App\Providers\Filament;
 
-use Filament\Http\Middleware\Authenticate;
-use Filament\Http\Middleware\DisableBladeIconComponents;
-use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
 use Filament\Panel;
-use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Filament\Widgets;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Filament\PanelProvider;
+use Filament\Pages\Dashboard;
+use Filament\Support\Colors\Color;
+use App\Filament\Widgets\StatsOverview;
+use App\Filament\Widgets\KunjunganChart;
+use Filament\Navigation\NavigationGroup;
+use App\Filament\Widgets\PendapatanChart;
+use Filament\Widgets\StatsOverviewWidget;
+use App\Filament\Widgets\AdminStatsWidget;
+use App\Filament\Widgets\KasirStatsWidget;
+use Filament\Http\Middleware\Authenticate;
+use App\Filament\Widgets\DokterStatsWidget;
+use App\Filament\Widgets\AdminKunjunganChart;
+use App\Filament\Widgets\AdminKunjunganStats;
+use App\Filament\Widgets\LatestKunjunganWidget;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
-use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -24,22 +36,36 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
-            ->id('admin')
-            ->path('admin')
+            ->id('praktek-klinik')
+            ->path('praktek-klinik')
             ->login()
-            ->brandName('Praktik Dokter')
+            ->brandName('Praktek Klinik')
+            ->topNavigation(false)
+            ->favicon(asset('/profile.png'))
             ->colors([
                 'primary' => Color::Amber,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                \App\Filament\Widgets\StatsOverview::class,
+                \App\Filament\Widgets\AdminKunjunganChart::class,
+                \App\Filament\Widgets\AdminPendapatanStats::class, // Pastikan ada di sini
+                \App\Filament\Widgets\AdminStatsWidget::class,
+                \App\Filament\Widgets\LatestKunjunganWidget::class,
+                StatsOverviewWidget::class,
+                DokterStatsWidget::class,
+                LatestKunjunganWidget::class,
+                KasirStatsWidget::class,
+                AdminStatsWidget::class,
 
+
+            ])
+            ->navigationGroups([
+                'Master Data',
+                'Pemeriksaan',
+                'Transaksi',
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -53,14 +79,14 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
                 \Hasnayeen\Themes\Http\Middleware\SetTheme::class
 
-            ])
-            ->plugin(
-                \Hasnayeen\Themes\ThemesPlugin::make()
-            )
+                ])
+                ->plugin(
+                    \Hasnayeen\Themes\ThemesPlugin::make()
+                )
             ->authMiddleware([
                 Authenticate::class,
-            ]);
 
+            ]);
 
     }
 

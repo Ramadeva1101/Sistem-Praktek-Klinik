@@ -2,33 +2,41 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Pasien;
-use App\Models\Pemeriksaan;
-use App\Models\Pengguna;
-use Filament\Pages\Dashboard;
-use Filament\Widgets\StatsOverviewWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
-use App\Filament\Widgets\RecentPatients;
-use App\Filament\Widgets\RecentExaminations;
-use App\Models\Obat;
+use Filament\Pages\Dashboard as BaseDashboard;
 
-class MainDashboard extends Dashboard
+class Dashboard extends BaseDashboard
 {
     public function getWidgets(): array
     {
-        return [
-            StatsOverviewWidget::class,
+        // Untuk role admin
+        if (auth()->user()->role === 'admin') {
+            return [
+                // Statistik Kunjungan di paling atas
+                \App\Filament\Widgets\AdminKunjunganStats::class,
+                // Chart di bawahnya
+                \App\Filament\Widgets\AdminKunjunganChart::class,
+                // Widget lainnya
+                \App\Filament\Widgets\AdminPendapatanStats::class,
+                \App\Filament\Widgets\AdminStatsWidget::class,
+                \App\Filament\Widgets\LatestKunjunganWidget::class,
+            ];
+        }
 
-        ];
-    }
+        // Untuk role dokter
+        if (auth()->user()->role === 'dokter') {
+            return [
+                \App\Filament\Widgets\DokterStatsWidget::class,
+                \App\Filament\Widgets\LatestKunjunganWidget::class,
+            ];
+        }
 
-    public function getStats(): array
-    {
-        return [
-            Stat::make('Jumlah Pasien', Pasien::count()),
-            Stat::make('Jumlah Pemeriksaan', Pemeriksaan::count()),
-            Stat::make('Jumlah Pengguna', Pengguna::count()),
-            Stat::make('Jumlah Pengguna', Obat::count()),
-        ];
+        // Untuk role kasir
+        if (auth()->user()->role === 'kasir') {
+            return [
+                \App\Filament\Widgets\KasirStatsWidget::class,
+            ];
+        }
+
+        return []; // Return empty array untuk role lainnya
     }
 }

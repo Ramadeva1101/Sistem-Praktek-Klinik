@@ -20,6 +20,18 @@ class Pasien extends Model
         'tanggal_lahir',
         'alamat',
         'jenis_kelamin',
+        'jumlah_kunjungan',
+        'kunjungan_terakhir',
+    ];
+
+    protected $hidden = [
+        'jumlah_kunjungan',
+    ];
+
+    protected $casts = [
+        'tanggal_lahir' => 'date',
+        'kunjungan_terakhir' => 'datetime',
+        'jumlah_kunjungan' => 'integer',
     ];
 
     protected static function boot()
@@ -40,6 +52,16 @@ class Pasien extends Model
     }
     public function kunjungan(): HasMany
     {
-        return $this->hasMany(Kunjungan::class, 'pasien_id');
+        return $this->hasMany(Kunjungan::class, 'kode_pelanggan', 'kode_pelanggan');
+    }
+
+    public function detailPemeriksaan(): HasMany
+    {
+        return $this->hasMany(DetailPemeriksaanKunjungan::class, 'kode_pelanggan', 'kode_pelanggan');
+    }
+
+    public function detailObat(): HasMany
+    {
+        return $this->hasMany(DetailObatKunjungan::class, 'kode_pelanggan', 'kode_pelanggan');
     }
 }

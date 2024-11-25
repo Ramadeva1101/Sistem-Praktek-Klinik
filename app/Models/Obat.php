@@ -28,13 +28,7 @@ class Obat extends Model
 
     public function kunjungans(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Kunjungan::class,
-            'detail_obat_kunjungans',
-            'obat_id',
-            'kunjungan_id',
-            'kode_obat',
-            'id'
-        );
+        return $this->belongsToMany(Kunjungan::class, 'kunjungan_obat', 'kode_obat', 'kunjungan_id')
+            ->withTimestamps();
     }
 }

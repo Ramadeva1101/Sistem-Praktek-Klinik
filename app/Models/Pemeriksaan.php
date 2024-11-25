@@ -32,13 +32,7 @@ class Pemeriksaan extends Model
 
     public function kunjungans(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Kunjungan::class,
-            'detail_pemeriksaan_kunjungans',
-            'pemeriksaan_id',
-            'kunjungan_id',
-            'kode_pemeriksaan',
-            'id'
-        );
+        return $this->belongsToMany(Kunjungan::class, 'kunjungan_pemeriksaan', 'kode_pemeriksaan', 'kunjungan_id')
+            ->withTimestamps();
     }
 }

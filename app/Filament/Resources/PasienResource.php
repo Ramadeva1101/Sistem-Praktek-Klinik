@@ -13,16 +13,22 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Filament\Navigation\NavigationItem;
 use App\Filament\Resources\KunjunganResource;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Filament\Navigation\NavigationGroup;
 
 class PasienResource extends Resource
 {
     protected static ?string $model = Pasien::class;
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationLabel = 'Kasir';
-    protected static ?string $navigationGroup = 'Transaksi';
+    protected static ?string $navigationGroup = 'Master Data';
 
-
-
+    public static function getNavigationGroup(): ?string
+    {
+        return auth()->user()->role === 'dokter' ? 'Data' : 'Master Data';
+    }
 
     public static function form(Form $form): Form
     {
@@ -72,20 +78,47 @@ class PasienResource extends Resource
                 ->label('Buat Kunjungan')
                 ->icon('heroicon-o-plus')
                 ->action(function (Pasien $record) {
-                    // Membuat kunjungan baru
-                    $kunjungan = Kunjungan::create([
-                        'kode_pelanggan' => $record->kode_pelanggan,
-                        'nama' => $record->nama,
-                        'tanggal_lahir' => $record->tanggal_lahir,
-                        'jenis_kelamin' => $record->jenis_kelamin,
-                        'alamat' => $record->alamat,
-                        'tanggal_kunjungan' => now()
-                    ]);
+                    try {
+                        DB::beginTransaction();
 
-                    Notification::make()
-                        ->title('Kunjungan berhasil dibuat')
-                        ->success()
-                        ->send();
+                        // Debug tanggal lahir
+                        Log::info('Tanggal Lahir Pasien:', [
+                            'raw' => $record->tanggal_lahir,
+                            'formatted' => $record->tanggal_lahir instanceof Carbon
+                                ? $record->tanggal_lahir->format('Y-m-d')
+                                : $record->tanggal_lahir
+                        ]);
+
+                        // Membuat kunjungan baru
+                        $kunjungan = Kunjungan::create([
+                            'kode_pelanggan' => $record->kode_pelanggan,
+                            'nama' => $record->nama,
+                            'tanggal_lahir' => $record->tanggal_lahir instanceof Carbon
+                                ? $record->tanggal_lahir->format('Y-m-d')
+                                : $record->tanggal_lahir,
+                            'jenis_kelamin' => $record->jenis_kelamin,
+                            'alamat' => $record->alamat,
+                            'tanggal_kunjungan' => now()->setTimezone('Asia/Makassar'),
+                            'status' => 'active'
+                        ]);
+
+                        DB::commit();
+
+                        Notification::make()
+                            ->title('Kunjungan berhasil dibuat')
+                            ->success()
+                            ->send();
+
+                    } catch (\Exception $e) {
+                        DB::rollBack();
+                        Log::error('Error creating kunjungan: ' . $e->getMessage());
+
+                        Notification::make()
+                            ->title('Gagal membuat kunjungan')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
                 })
                 ->successRedirectUrl(fn () => KunjunganResource::getUrl('index')),
 
@@ -114,7 +147,7 @@ class PasienResource extends Resource
         return [
             'index' => Pages\ListPasiens::route('/'),
             'create' => Pages\CreatePasien::route('/create'),
-          
+
         ];
     }
 

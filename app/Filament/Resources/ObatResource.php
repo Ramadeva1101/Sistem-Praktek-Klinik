@@ -12,12 +12,15 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
+use Filament\Navigation\NavigationGroup;
 
 class ObatResource extends Resource
 {
     protected static ?string $model = Obat::class;
-
-
+    protected static ?string $navigationIcon = 'heroicon-o-beaker';
+    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
@@ -77,5 +80,40 @@ class ObatResource extends Resource
                     ->group('Master Data')
             ]
             : [];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return in_array(auth()->user()->role, ['admin', 'dokter']);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function canViewAny(): bool
+    {
+        return in_array(auth()->user()->role, ['admin', 'dokter']);
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return 'Obat';
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return auth()->user()->role === 'dokter' ? 'Data' : 'Master Data';
     }
 }

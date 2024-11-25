@@ -17,7 +17,11 @@ class PemeriksaanResource extends Resource
 {
     protected static ?string $model = Pemeriksaan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+
+    protected static ?string $navigationGroup = 'Pemeriksaan';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
@@ -84,4 +88,20 @@ class PemeriksaanResource extends Resource
             ]
             : [];
     }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return in_array(auth()->user()->role, ['admin', 'dokter']);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return 'Pemeriksaan';
+    }
 }
+

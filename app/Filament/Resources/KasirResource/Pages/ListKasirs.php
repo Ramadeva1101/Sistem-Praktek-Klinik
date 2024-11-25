@@ -10,10 +10,5 @@ class ListKasirs extends ListRecords
 {
     protected static string $resource = KasirResource::class;
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\CreateAction::make(),
-        ];
-    }
+
 }

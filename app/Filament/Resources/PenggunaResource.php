@@ -21,7 +21,7 @@ class PenggunaResource extends Resource
 {
     protected static ?string $model = Pengguna::class;
 
-  
+
 
     public static function form(Form $form): Form
     {
@@ -86,7 +86,7 @@ class PenggunaResource extends Resource
         return [
             'index' => Pages\ListPenggunas::route('/'),
             'create' => Pages\CreatePengguna::route('/create'),
-            'edit' => Pages\EditPengguna::route('/{record}/edit'),
+           
         ];
     }
 

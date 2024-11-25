@@ -15,7 +15,19 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    if (auth()->check()) {
+        switch (auth()->user()->role) {
+            case 'admin':
+                return redirect('/praktek-klinik');
+            case 'dokter':
+                return redirect('/praktek-klinik/kunjungans');
+            case 'kasir':
+                return redirect('/praktek-klinik/kasirs');
+            default:
+                return redirect('/praktek-klinik/login');
+        }
+    }
+    return redirect('/praktek-klinik/login');
 });
 
 Route::get('/dashboard', function () {
@@ -27,5 +39,5 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
 require __DIR__.'/auth.php';
+

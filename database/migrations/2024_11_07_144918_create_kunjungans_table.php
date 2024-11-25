@@ -10,12 +10,13 @@ return new class extends Migration
     {
         Schema::create('kunjungans', function (Blueprint $table) {
             $table->id();
-            $table->string('kode_pelanggan')->unique();
+            $table->string('kode_pelanggan');
             $table->string('nama');
-            $table->date('tanggal_lahir');
-            $table->enum('jenis_kelamin', ['pria', 'wanita']);
-            $table->string('alamat');
+            $table->date('tanggal_lahir')->nullable(false); // Pastikan tipe date dan tidak boleh null
+            $table->string('jenis_kelamin');
+            $table->text('alamat');
             $table->datetime('tanggal_kunjungan');
+            $table->string('status')->default('active');
             $table->timestamps();
         });
     }

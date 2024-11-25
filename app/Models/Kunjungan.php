@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Kunjungan extends Model
 {
@@ -25,8 +26,8 @@ class Kunjungan extends Model
     ];
 
     protected $casts = [
-        'tanggal_kunjungan' => 'datetime',
-        'tanggal_lahir' => 'date'
+        'tanggal_lahir' => 'date',
+        'tanggal_kunjungan' => 'datetime'
     ];
 
     public function kasir(): HasOne
@@ -41,25 +42,34 @@ class Kunjungan extends Model
 
     public function obats(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Obat::class,
-            'detail_obat_kunjungans',
-            'kunjungan_id',
-            'obat_id',
-            'id',
-            'kode_obat'
-        );
+        return $this->belongsToMany(Obat::class, 'kunjungan_obat', 'kunjungan_id', 'kode_obat')
+            ->withPivot('jumlah', 'total_harga')
+            ->withTimestamps();
     }
 
     public function pemeriksaans(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Pemeriksaan::class,
-            'detail_pemeriksaan_kunjungans',
-            'kunjungan_id',
-            'pemeriksaan_id',
-            'id',
-            'kode_pemeriksaan'
-        );
+        return $this->belongsToMany(Pemeriksaan::class, 'kunjungan_pemeriksaan', 'kunjungan_id', 'kode_pemeriksaan')
+            ->withTimestamps();
+    }
+
+    public function detailPemeriksaan(): HasMany
+    {
+        return $this->hasMany(DetailPemeriksaanKunjungan::class, 'kode_pelanggan', 'kode_pelanggan')
+            ->where('tanggal_kunjungan', $this->tanggal_kunjungan);
+    }
+
+    public function detailObat(): HasMany
+    {
+        return $this->hasMany(DetailObatKunjungan::class, 'kode_pelanggan', 'kode_pelanggan')
+            ->where('tanggal_kunjungan', $this->tanggal_kunjungan);
+    }
+
+    public static function canCreateNewVisit($kodePelanggan)
+    {
+        // Cek apakah ada kunjungan yang belum dibayar di kasir
+        return !Kasir::where('kode_pelanggan', $kodePelanggan)
+            ->where('status_pembayaran', 'Belum Bayar')
+            ->exists();
     }
 }
