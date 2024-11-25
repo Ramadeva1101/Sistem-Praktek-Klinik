@@ -54,9 +54,11 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'https://your-railway-url'),
 
-    'asset_url' => env('ASSET_URL', '/'),
+    'asset_url' => env('ASSET_URL', 'https://your-railway-url'),
+
+    'force_https' => env('FORCE_HTTPS', false),
 
     /*
     |--------------------------------------------------------------------------
