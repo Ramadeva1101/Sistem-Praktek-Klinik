@@ -8,6 +8,7 @@ use Filament\Facades\Filament;
 use Filament\Navigation\NavigationGroup;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Schema;
+use App\Filament\Widgets\AdminKunjunganChart;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -48,5 +49,9 @@ class AppServiceProvider extends ServiceProvider
         // if (config('app.env') === 'production') {
         //     URL::forceScheme('https');
         // }
+
+        Filament::registerWidgets([
+            AdminKunjunganChart::class,
+        ]);
     }
 }
