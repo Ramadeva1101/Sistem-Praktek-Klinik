@@ -37,13 +37,32 @@ class KunjunganResource extends Resource
     protected static ?string $modelLabel = 'Kunjungan';
     protected static ?string $pluralModelLabel = 'Kunjungan';
 
+    private static function checkPendingPayment($kodePelanggan): bool
+    {
+        return Kasir::where('kode_pelanggan', $kodePelanggan)
+            ->where('status_pembayaran', 'Belum Dibayar')
+            ->exists();
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 TextInput::make('kode_pelanggan')
                     ->required()
-                    ->label('Kode Pelanggan'),
+                    ->label('Kode Pelanggan')
+                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                        if (self::checkPendingPayment($state)) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Pembayaran Tertunda')
+                                ->body('Pasien ini memiliki pembayaran yang belum diselesaikan. Harap selesaikan pembayaran terlebih dahulu.')
+                                ->persistent()
+                                ->send();
+
+                            $set('kode_pelanggan', null);
+                        }
+                    }),
                 TextInput::make('nama')
                     ->required(),
                 DatePicker::make('tanggal_lahir')
@@ -84,6 +103,13 @@ class KunjunganResource extends Resource
                     ->sortable()
                     ->label('Tanggal Kunjungan'),
             ])
+            ->modifyQueryUsing(function ($query) {
+                return $query->whereNotIn('kode_pelanggan', function ($subquery) {
+                    $subquery->select('kode_pelanggan')
+                        ->from('kasirs')
+                        ->where('status_pembayaran', 'Belum Dibayar');
+                });
+            })
             ->actions([
                 Action::make('pilih_obat')
                     ->label('Obat')
@@ -452,6 +478,14 @@ class KunjunganResource extends Resource
 
     public static function canCreate(): bool
     {
-        return auth()->user()->role === 'admin';
+        if (!auth()->user()->role === 'admin') {
+            return false;
+        }
+
+        if (request()->has('kode_pelanggan')) {
+            return !self::checkPendingPayment(request()->kode_pelanggan);
+        }
+
+        return true;
     }
 }

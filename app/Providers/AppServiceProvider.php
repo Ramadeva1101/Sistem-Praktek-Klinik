@@ -41,17 +41,12 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        // Force HTTPS in production
-        if (config('app.env') !== 'local') {
-            URL::forceScheme('https');
-        }
-
         // Fix untuk MySQL versi < 5.7.7
         Schema::defaultStringLength(191);
 
-        // Fix untuk trusted proxies jika menggunakan load balancer
-        if (config('app.env') !== 'local') {
-            $this->app['request']->server->set('HTTPS', 'on');
-        }
+        // Comment bagian ini dulu
+        // if (config('app.env') === 'production') {
+        //     URL::forceScheme('https');
+        // }
     }
 }

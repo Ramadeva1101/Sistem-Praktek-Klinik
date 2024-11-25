@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Widgets\AdminKunjunganStats;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
@@ -12,7 +13,7 @@ class Dashboard extends BaseDashboard
         if (auth()->user()->role === 'admin') {
             return [
                 // Statistik Kunjungan di paling atas
-                \App\Filament\Widgets\AdminKunjunganStats::class,
+                
                 // Chart di bawahnya
                 \App\Filament\Widgets\AdminKunjunganChart::class,
                 // Widget lainnya

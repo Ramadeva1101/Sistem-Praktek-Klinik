@@ -18,6 +18,17 @@ class DetailObatKunjungan extends Model
         'jumlah' => 'integer',
     ];
 
+    public function kasir(): BelongsTo
+    {
+        return $this->belongsTo(Kasir::class, 'kode_pelanggan', 'kode_pelanggan')
+            ->where('tanggal_kunjungan', $this->tanggal_kunjungan);
+    }
+
+    public function getStatusPembayaranAttribute()
+    {
+        return $this->kasir?->status_pembayaran ?? 'Belum Dibayar';
+    }
+
     public function kunjungan(): BelongsTo
     {
         return $this->belongsTo(Kunjungan::class, 'kode_pelanggan', 'kode_pelanggan')

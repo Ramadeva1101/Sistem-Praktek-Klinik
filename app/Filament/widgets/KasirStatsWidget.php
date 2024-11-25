@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Kasir;
+use App\Models\RiwayatPembayaran;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -34,6 +35,42 @@ class KasirStatsWidget extends BaseWidget
             ->description('Transaksi selesai')
             ->descriptionIcon('heroicon-m-check-circle')
             ->color('success'),
+
+            Stat::make('Pendapatan Hari Ini', function () {
+                return 'Rp ' . number_format(
+                    RiwayatPembayaran::whereDate('tanggal_pembayaran', today())
+                        ->sum('jumlah_biaya'),
+                    0, ',', '.'
+                );
+            })
+                ->description('Total pendapatan hari ini')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('success'),
+
+            Stat::make('Pendapatan Minggu Ini', function () {
+                return 'Rp ' . number_format(
+                    RiwayatPembayaran::whereBetween('tanggal_pembayaran', [
+                        now()->startOfWeek(),
+                        now()->endOfWeek()
+                    ])->sum('jumlah_biaya'),
+                    0, ',', '.'
+                );
+            })
+                ->description('Total pendapatan minggu ini')
+                ->descriptionIcon('heroicon-m-chart-bar')
+                ->color('info'),
+
+            Stat::make('Pendapatan Bulan Ini', function () {
+                return 'Rp ' . number_format(
+                    RiwayatPembayaran::whereMonth('tanggal_pembayaran', now()->month)
+                        ->whereYear('tanggal_pembayaran', now()->year)
+                        ->sum('jumlah_biaya'),
+                    0, ',', '.'
+                );
+            })
+                ->description('Total pendapatan bulan ini')
+                ->descriptionIcon('heroicon-m-presentation-chart-line')
+                ->color('success'),
         ];
     }
 }

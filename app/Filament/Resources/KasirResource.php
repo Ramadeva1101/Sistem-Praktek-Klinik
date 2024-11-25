@@ -307,6 +307,27 @@ class KasirResource extends Resource
                                 ->send();
                         }
                     }),
+
+                Action::make('selesai_pembayaran')
+                    ->action(function (Kasir $record): void {
+                        DB::transaction(function () use ($record) {
+                            // Update status di Kasir
+                            $record->update([
+                                'status_pembayaran' => 'Sudah Dibayar',
+                                'tanggal_pembayaran' => now()
+                            ]);
+
+                            // Update status di DetailObatKunjungan
+                            DetailObatKunjungan::where('kode_pelanggan', $record->kode_pelanggan)
+                                ->where('tanggal_kunjungan', $record->tanggal_kunjungan)
+                                ->update(['status_pembayaran' => 'Sudah Dibayar']);
+
+                            // Update status di DetailPemeriksaanKunjungan
+                            DetailPemeriksaanKunjungan::where('kode_pelanggan', $record->kode_pelanggan)
+                                ->where('tanggal_kunjungan', $record->tanggal_kunjungan)
+                                ->update(['status_pembayaran' => 'Sudah Dibayar']);
+                        });
+                    }),
             ])
             ->defaultSort('created_at', 'desc')
             ->paginated([10])

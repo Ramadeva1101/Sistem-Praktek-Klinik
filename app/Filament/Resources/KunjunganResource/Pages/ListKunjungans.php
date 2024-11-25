@@ -11,12 +11,7 @@ class ListKunjungans extends ListRecords
 {
     protected static string $resource = KunjunganResource::class;
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\CreateAction::make(),
-        ];
-    }
+ 
 
     public function selesaiKunjungan($record): void
     {

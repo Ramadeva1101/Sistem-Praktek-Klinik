@@ -72,4 +72,20 @@ class Kunjungan extends Model
             ->where('status_pembayaran', 'Belum Bayar')
             ->exists();
     }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($kunjungan) {
+            // Cek apakah ada pembayaran yang belum lunas
+            $pendingPayment = Kasir::where('kode_pelanggan', $kunjungan->kode_pelanggan)
+                ->where('status_pembayaran', 'Belum Dibayar')
+                ->exists();
+
+            if ($pendingPayment) {
+                throw new \Exception('Pasien memiliki pembayaran yang belum diselesaikan. Harap selesaikan pembayaran terlebih dahulu.');
+            }
+        });
+    }
 }
