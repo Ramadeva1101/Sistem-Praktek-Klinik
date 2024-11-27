@@ -90,4 +90,8 @@ return [
         ],
     ],
 
+    'styles' => [
+        'public/css/custom-login.css',
+    ],
+
 ];

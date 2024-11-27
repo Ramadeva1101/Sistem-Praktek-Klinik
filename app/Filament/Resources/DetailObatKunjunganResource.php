@@ -4,29 +4,38 @@ namespace App\Filament\Resources;
 
 use Filament\Tables;
 use Filament\Tables\Table;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
+use App\Exports\DetailObatExport;
+use Filament\Actions\ExportAction;
+use Filament\Support\Colors\Color;
+use Illuminate\Support\Facades\DB;
 use App\Models\DetailObatKunjungan;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\Forms;
+use Maatwebsite\Excel\Facades\Excel;
+use Filament\Actions\Exports\Exports;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\Layout\View;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\DeleteAction;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Actions\Exports\ExportColumn;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Infolists\Components\RepeatableEntry;
+use App\Filament\Exports\DetailObatKunjunganExporter;
 use App\Filament\Resources\DetailObatKunjunganResource\Pages;
+use App\Filament\Resources\DetailObatKunjunganResource\Pages\EditDetailObatKunjungan;
 use App\Filament\Resources\DetailObatKunjunganResource\Pages\ListDetailObatKunjungans;
 use App\Filament\Resources\DetailObatKunjunganResource\Pages\CreateDetailObatKunjungan;
-use App\Filament\Resources\DetailObatKunjunganResource\Pages\EditDetailObatKunjungan;
-use Illuminate\Support\Facades\DB;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Notifications\Notification;
-use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Exports\DetailObatExport;
-use Filament\Support\Colors\Color;
+
 
 class DetailObatKunjunganResource extends Resource
 {
@@ -39,17 +48,6 @@ class DetailObatKunjunganResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->query(function () {
-                return DetailObatKunjungan::query()
-                    ->select([
-                        'kode_pelanggan',
-                        'nama_pasien',
-                        'tanggal_kunjungan',
-                        DB::raw('MAX(id) as id')
-                    ])
-                    ->groupBy('kode_pelanggan', 'nama_pasien', 'tanggal_kunjungan')
-                    ->orderBy('tanggal_kunjungan', 'desc');
-            })
             ->headerActions([
                 Action::make('exportExcel')
                     ->label('Export Excel')
@@ -58,8 +56,51 @@ class DetailObatKunjunganResource extends Resource
                     ->size('lg')
                     ->button()
                     ->tooltip('Download Laporan Excel')
-                    ->action(function () {
-                        return Excel::download(new DetailObatExport, 'detail-obat-' . now()->format('Y-m-d') . '.xlsx');
+                    ->action(function ($livewire) {
+                        $query = DetailObatKunjungan::query()
+                            ->select([
+                                'kode_pelanggan',
+                                'nama_pasien',
+                                'kode_obat',
+                                'nama_obat',
+                                'jumlah',
+                                'harga',
+                                'total_harga',
+                                'tanggal_kunjungan',
+                                'status_pembayaran'
+                            ]);
+
+                        // Ambil nilai filter tanggal
+                        $tableFilters = $livewire->tableFilters;
+                        $dariTanggal = data_get($tableFilters, 'created_at.dari_tanggal');
+                        $sampaiTanggal = data_get($tableFilters, 'created_at.sampai_tanggal');
+
+                        if ($dariTanggal) {
+                            $query->whereDate('tanggal_kunjungan', '>=', $dariTanggal);
+                        }
+                        if ($sampaiTanggal) {
+                            $query->whereDate('tanggal_kunjungan', '<=', $sampaiTanggal);
+                        }
+
+                        $periodeAwal = $dariTanggal ? date('d/m/Y', strtotime($dariTanggal)) : 'Semua Data';
+                        $periodeAkhir = $sampaiTanggal ? date('d/m/Y', strtotime($sampaiTanggal)) : 'Semua Data';
+
+                        request()->merge([
+                            'dari_tanggal' => $periodeAwal,
+                            'sampai_tanggal' => $periodeAkhir,
+                        ]);
+
+                        $fileName = 'detail-obat';
+                        if ($dariTanggal && $sampaiTanggal) {
+                            $fileName .= '-' . date('d-m-Y', strtotime($dariTanggal)) . '-sd-' . date('d-m-Y', strtotime($sampaiTanggal));
+                        } else {
+                            $fileName .= '-' . now()->format('d-m-Y');
+                        }
+
+                        return Excel::download(
+                            new DetailObatExport($query),
+                            $fileName . '.xlsx'
+                        );
                     }),
                 Action::make('exportPdf')
                     ->label('Export PDF')
@@ -68,30 +109,55 @@ class DetailObatKunjunganResource extends Resource
                     ->size('lg')
                     ->button()
                     ->tooltip('Download Laporan PDF')
-                    ->action(function () {
-                        $data = DetailObatKunjungan::query()
+                    ->action(function ($livewire) {
+                        $query = DetailObatKunjungan::query()
                             ->select([
                                 'kode_pelanggan',
                                 'nama_pasien',
-                                'tanggal_kunjungan',
                                 'kode_obat',
                                 'nama_obat',
                                 'jumlah',
                                 'harga',
                                 'total_harga',
+                                'tanggal_kunjungan',
                                 'status_pembayaran'
-                            ])
-                            ->orderBy('tanggal_kunjungan', 'desc')
-                            ->get();
+                            ]);
+
+                        // Ambil nilai filter tanggal
+                        $tableFilters = $livewire->tableFilters;
+                        $dariTanggal = data_get($tableFilters, 'created_at.dari_tanggal');
+                        $sampaiTanggal = data_get($tableFilters, 'created_at.sampai_tanggal');
+
+                        if ($dariTanggal) {
+                            $query->whereDate('tanggal_kunjungan', '>=', $dariTanggal);
+                        }
+                        if ($sampaiTanggal) {
+                            $query->whereDate('tanggal_kunjungan', '<=', $sampaiTanggal);
+                        }
+
+                        $periodeAwal = $dariTanggal ? date('d/m/Y', strtotime($dariTanggal)) : 'Semua Data';
+                        $periodeAkhir = $sampaiTanggal ? date('d/m/Y', strtotime($sampaiTanggal)) : 'Semua Data';
+
+                        $data = $query->get();
 
                         $pdf = PDF::loadView('exports.detail-obat', [
-                            'records' => $data
+                            'records' => $data,
+                            'periode_awal' => $periodeAwal,
+                            'periode_akhir' => $periodeAkhir
                         ]);
 
                         $pdf->setPaper('A4', 'landscape');
+
+                        $fileName = 'detail-obat';
+                        if ($dariTanggal && $sampaiTanggal) {
+                            $fileName .= '-' . date('d-m-Y', strtotime($dariTanggal)) . '-sd-' . date('d-m-Y', strtotime($sampaiTanggal));
+                        } else {
+                            $fileName .= '-' . now()->format('d-m-Y');
+                        }
+
                         return response()->streamDownload(function () use ($pdf) {
                             echo $pdf->output();
-                        }, 'detail-obat-' . now()->format('Y-m-d') . '.pdf');
+                        }, $fileName . '.pdf');
                     })
             ])
             ->columns([
@@ -181,6 +247,30 @@ class DetailObatKunjunganResource extends Resource
                             ->title('Data berhasil dihapus')
                             ->send();
                     })
+            ])
+            ->filters([
+                Tables\Filters\Filter::make('created_at')
+                    ->form([
+                        DatePicker::make('dari_tanggal')
+                            ->label('Dari Tanggal'),
+                        DatePicker::make('sampai_tanggal')
+                            ->label('Sampai Tanggal'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['dari_tanggal'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_kunjungan', '>=', $date),
+                            )
+                            ->when(
+                                $data['sampai_tanggal'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_kunjungan', '<=', $date),
+                            );
+                    })
+            ])
+            ->bulkActions([
+                ExportBulkAction::make()
+                    ->exporter(DetailObatKunjunganExporter::class)
             ]);
     }
 
@@ -197,5 +287,5 @@ class DetailObatKunjunganResource extends Resource
     {
         return in_array(auth()->user()->role, ['admin', 'kasir']);
     }
-   
+
 }

@@ -2,20 +2,24 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\RiwayatPembayaranResource\Pages;
-use App\Models\RiwayatPembayaran;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Actions\ViewAction;
 use Filament\Infolists\Infolist;
+use Filament\Resources\Resource;
+use App\Models\RiwayatPembayaran;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Actions\ViewAction;
+use Illuminate\Database\Eloquent\Model;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\DeleteAction;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Tables\Actions\DeleteAction;
-use Illuminate\Database\Eloquent\Model;
-use Filament\Tables\Actions\ActionGroup;
-use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\RiwayatPembayaranResource\Pages;
+use Filament\Forms\Components\Select;
+use Carbon\Carbon;
 
 class RiwayatPembayaranResource extends Resource
 {
@@ -33,13 +37,41 @@ class RiwayatPembayaranResource extends Resource
                     ->timezone('Asia/Makassar')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('kode_pelanggan')
-                    ->label('Kode')
+                    ->label('Kode Pasien')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nama_pasien')
                     ->label('Nama Pasien')
                     ->searchable()
                     ->sortable(),
+            ])
+            ->filters([
+                Filter::make('date_range')
+                    ->form([
+                        DatePicker::make('dari_tanggal')
+                            ->label('Dari Tanggal'),
+                        DatePicker::make('sampai_tanggal')
+                            ->label('Sampai Tanggal'),
+                    ])
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['dari_tanggal'] ?? null) {
+                            $indicators['Dari'] = Carbon::parse($data['dari_tanggal'])->format('d/m/Y');
+                        }
+                        if ($data['sampai_tanggal'] ?? null) {
+                            $indicators['Sampai'] = Carbon::parse($data['sampai_tanggal'])->format('d/m/Y');
+                        }
+                        return $indicators;
+                    })
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['dari_tanggal'] || $data['sampai_tanggal'],
+                            fn($q) => $q->filterTanggalDariSampai(
+                                $data['dari_tanggal'] ?? null,
+                                $data['sampai_tanggal'] ?? null
+                            )
+                        );
+                    }),
             ])
             ->defaultSort('tanggal_pembayaran', 'desc')
             ->actions([

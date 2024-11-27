@@ -39,9 +39,11 @@ class AdminPanelProvider extends PanelProvider
             ->id('praktek-klinik')
             ->path('praktek-klinik')
             ->login()
+            // ->logout()
             ->brandName('Praktek Klinik')
             ->topNavigation(false)
-            ->favicon(asset('/profile.png'))
+
+            ->brandLogoHeight('64px')
             ->colors([
                 'primary' => Color::Amber,
             ])

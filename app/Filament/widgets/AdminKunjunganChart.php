@@ -21,61 +21,61 @@ class AdminKunjunganChart extends ChartWidget
         return auth()->user()->role === 'admin';
     }
 
-    protected function getFilters(): ?array
-    {
-        return [
-            '7hari' => '7 Hari Terakhir',
-            'bulan' => 'Bulan Ini',
-            'tahun' => 'Tahun Ini',
-        ];
-    }
+    // protected function getFilters(): ?array
+    // {
+    //     return [
+    //         // '7hari' => '7 Hari Terakhir',
+    //         'bulan' => 'Bulan Ini',
+    //         // 'tahun' => 'Tahun Ini',
+    //     ];
+    // }
 
     protected function getData(): array
     {
-        $query = RiwayatPembayaran::select(
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+        $daysInMonth = now()->daysInMonth;
+
+        // Buat array untuk semua tanggal dalam bulan
+        $dates = collect(range(1, $daysInMonth))->map(function ($day) use ($currentMonth, $currentYear) {
+            return Carbon::createFromDate($currentYear, $currentMonth, $day)->format('Y-m-d');
+        });
+
+        // Ambil data kunjungan
+        $kunjungan = RiwayatPembayaran::select(
             DB::raw('DATE(tanggal_pembayaran) as date'),
             DB::raw('COUNT(*) as total_kunjungan')
-        );
+        )
+        ->whereMonth('tanggal_pembayaran', $currentMonth)
+        ->whereYear('tanggal_pembayaran', $currentYear)
+        ->groupBy('date')
+        ->pluck('total_kunjungan', 'date')
+        ->toArray();
 
-        $query = match ($this->filter) {
-            '7hari' => $query->where('tanggal_pembayaran', '>=', now()->subDays(7)),
-            'bulan' => $query->whereMonth('tanggal_pembayaran', now()->month)
-                            ->whereYear('tanggal_pembayaran', now()->year),
-            'tahun' => $query->whereYear('tanggal_pembayaran', now()->year),
-            default => $query->where('tanggal_pembayaran', '>=', now()->subDays(7))
-        };
+        // Siapkan data untuk setiap tanggal
+        $data = $dates->map(function ($date) use ($kunjungan) {
+            return $kunjungan[$date] ?? 0;
+        });
 
-        $data = $query->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        $labels = $data->pluck('date')->map(function ($date) {
-            return match ($this->filter) {
-                '7hari' => Carbon::parse($date)->format('d M'),
-                'bulan' => Carbon::parse($date)->format('d M'),
-                'tahun' => Carbon::parse($date)->format('M Y'),
-                default => Carbon::parse($date)->format('d M')
-            };
-        })->toArray();
+        $labels = $dates->map(function ($date) {
+            return Carbon::parse($date)->format('d');
+        });
 
         return [
             'datasets' => [
                 [
                     'label' => 'Total Kunjungan',
-                    'data' => $data->pluck('total_kunjungan')->toArray(),
-                    'borderColor' => '#36A2EB',
-                    'backgroundColor' => 'rgba(54, 162, 235, 0.1)',
-                    'fill' => true,
-                    'tension' => 0.3,
+                    'data' => $data->toArray(),
+                    'backgroundColor' => '#36A2EB',
                 ],
             ],
-            'labels' => $labels,
+            'labels' => $labels->toArray(),
         ];
     }
 
     protected function getType(): string
     {
-        return 'line';
+        return 'bar';
     }
 
     protected function getOptions(): array
@@ -93,6 +93,10 @@ class AdminKunjunganChart extends ChartWidget
                     ],
                 ],
                 'x' => [
+                    'title' => [
+                        'display' => true,
+                        'text' => 'Tanggal'
+                    ],
                     'grid' => [
                         'display' => false
                     ],
@@ -104,15 +108,11 @@ class AdminKunjunganChart extends ChartWidget
                 ],
                 'title' => [
                     'display' => true,
-                    'text' => $this->getChartTitle(),
+                    'text' => 'Statistik Kunjungan Bulan ' . now()->format('F Y'),
                 ],
             ],
             'responsive' => true,
             'maintainAspectRatio' => false,
-            'interaction' => [
-                'intersect' => false,
-                'mode' => 'index',
-            ],
         ];
     }
 

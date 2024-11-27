@@ -16,6 +16,8 @@ use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Notifications\Notification;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\DatePicker;
 
 class DetailPemeriksaanKunjunganResource extends Resource
 {
@@ -31,7 +33,7 @@ class DetailPemeriksaanKunjunganResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
- 
+
 
 // Untuk mencegah akses langsung via URL
 
@@ -42,35 +44,7 @@ class DetailPemeriksaanKunjunganResource extends Resource
         return false;
     }
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('kode_pelanggan')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('nama_pasien')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('kode_pemeriksaan')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('nama_pemeriksaan')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('harga')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\DateTimePicker::make('tanggal_kunjungan')
-                    ->required(),
-                Forms\Components\Select::make('status_pembayaran')
-                    ->required()
-                    ->options([
-                        'Belum Bayar' => 'Belum Bayar',
-                        'Sudah Bayar' => 'Sudah Bayar',
-                    ]),
-            ]);
-    }
+  
 
     public static function table(Table $table): Table
     {
@@ -120,7 +94,22 @@ class DetailPemeriksaanKunjunganResource extends Resource
                     ->extraAttributes(['class' => 'min-w-[120px]']),
             ])
             ->filters([
-                //
+                Filter::make('tanggal_kunjungan')
+                    ->form([
+                        DatePicker::make('dari_tanggal'),
+                        DatePicker::make('sampai_tanggal'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['dari_tanggal'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_kunjungan', '>=', $date),
+                            )
+                            ->when(
+                                $data['sampai_tanggal'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_kunjungan', '<=', $date),
+                            );
+                    })
             ])
             ->headerActions([
                 Action::make('exportExcel')
@@ -130,8 +119,35 @@ class DetailPemeriksaanKunjunganResource extends Resource
                     ->size('lg')
                     ->button()
                     ->tooltip('Download Laporan Excel')
-                    ->action(function () {
-                        return Excel::download(new \App\Exports\DetailPemeriksaanExport, 'detail-pemeriksaan-' . now()->format('Y-m-d') . '.xlsx');
+                    ->action(function ($livewire) {
+                        $query = $livewire->getFilteredTableQuery();
+
+                        // Ambil nilai filter tanggal dari tabel
+                        $tableFilters = $livewire->tableFilters;
+                        $dariTanggal = data_get($tableFilters, 'tanggal_kunjungan.dari_tanggal');
+                        $sampaiTanggal = data_get($tableFilters, 'tanggal_kunjungan.sampai_tanggal');
+
+                        // Format tanggal untuk ditampilkan di excel
+                        $periodeAwal = $dariTanggal ? date('d/m/Y', strtotime($dariTanggal)) : 'Semua Data';
+                        $periodeAkhir = $sampaiTanggal ? date('d/m/Y', strtotime($sampaiTanggal)) : 'Semua Data';
+
+                        // Tambahkan ke request untuk digunakan di export
+                        request()->merge([
+                            'dari_tanggal' => $periodeAwal,
+                            'sampai_tanggal' => $periodeAkhir,
+                        ]);
+
+                        $fileName = 'detail-pemeriksaan';
+                        if ($dariTanggal && $sampaiTanggal) {
+                            $fileName .= '-' . date('d-m-Y', strtotime($dariTanggal)) . '-sd-' . date('d-m-Y', strtotime($sampaiTanggal));
+                        } else {
+                            $fileName .= '-' . now()->format('d-m-Y');
+                        }
+
+                        return Excel::download(
+                            new \App\Exports\DetailPemeriksaanExport($query),
+                            $fileName . '.xlsx'
+                        );
                     }),
                 Action::make('exportPdf')
                     ->label('Export PDF')
@@ -140,19 +156,19 @@ class DetailPemeriksaanKunjunganResource extends Resource
                     ->size('lg')
                     ->button()
                     ->tooltip('Download Laporan PDF')
-                    ->action(function () {
-                        $data = DetailPemeriksaanKunjungan::query()
-                            ->select([
-                                'kode_pelanggan',
-                                'nama_pasien',
-                                'kode_pemeriksaan',
-                                'nama_pemeriksaan',
-                                'harga',
-                                'tanggal_kunjungan',
-                                'status_pembayaran'
-                            ])
-                            ->orderBy('tanggal_kunjungan', 'desc')
-                            ->get();
+                    ->action(function ($livewire) {
+                        $query = $livewire->getFilteredTableQuery();
+                        $data = $query->select([
+                            'kode_pelanggan',
+                            'nama_pasien',
+                            'kode_pemeriksaan',
+                            'nama_pemeriksaan',
+                            'harga',
+                            'tanggal_kunjungan',
+                            'status_pembayaran'
+                        ])
+                        ->orderBy('tanggal_kunjungan', 'desc')
+                        ->get();
 
                         $pdf = PDF::loadView('exports.detail-pemeriksaan', [
                             'records' => $data

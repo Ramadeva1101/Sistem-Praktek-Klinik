@@ -38,5 +38,5 @@ class AdminStatsWidget extends BaseWidget
         ];
     }
 
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 3;
 }

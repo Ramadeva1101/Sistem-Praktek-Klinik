@@ -2,106 +2,62 @@
 
 namespace App\Exports;
 
-use App\Models\DetailObatKunjungan;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithMapping;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class DetailObatExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle, ShouldAutoSize, WithEvents
+class DetailObatExport implements FromQuery, WithHeadings, WithStyles, WithColumnWidths, WithMapping
 {
-    private $totalKeseluruhan = 0;
+    use Exportable;
 
-    public function collection()
+    protected $query;
+    protected $totalKeseluruhan = 0;
+
+    public function __construct($query)
     {
-        $data = DetailObatKunjungan::query()
-            ->select([
-                'kode_pelanggan',
-                'nama_pasien',
-                'tanggal_kunjungan',
-                'kode_obat',
-                'nama_obat',
-                'jumlah',
-                'harga',
-                'total_harga',
-                'status_pembayaran'
-            ])
-            ->orderBy('tanggal_kunjungan', 'desc')
-            ->get();
-
-        $this->totalKeseluruhan = $data->sum('total_harga');
-
-        return $data;
+        $this->query = $query;
+        $this->totalKeseluruhan = $query->sum('total_harga');
     }
 
-    public function registerEvents(): array
+    public function query()
     {
-        return [
-            AfterSheet::class => function(AfterSheet $event) {
-                $lastRow = $event->sheet->getHighestRow();
-                $lastColumn = $event->sheet->getHighestColumn();
-
-                // Set width untuk semua kolom
-                foreach(range('A', $lastColumn) as $column) {
-                    $event->sheet->getColumnDimension($column)->setAutoSize(true);
-                }
-
-                // Tambahkan total di bawah
-                $totalRow = $lastRow + 2;
-                $event->sheet->setCellValue("A{$totalRow}", 'Total Keseluruhan:');
-                $event->sheet->mergeCells("A{$totalRow}:G{$totalRow}");
-                $event->sheet->setCellValue("H{$totalRow}", $this->totalKeseluruhan);
-
-                // Style untuk total
-                $event->sheet->getStyle("A{$totalRow}:I{$totalRow}")->applyFromArray([
-                    'font' => ['bold' => true],
-                    'borders' => [
-                        'allBorders' => [
-                            'borderStyle' => Border::BORDER_THIN,
-                        ],
-                    ],
-                ]);
-
-                $event->sheet->getStyle("A{$totalRow}")->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                // Format currency untuk kolom harga
-                $event->sheet->getStyle('G6:H'.$lastRow)
-                    ->getNumberFormat()
-                    ->setFormatCode('#,##0');
-
-                $event->sheet->getStyle("H{$totalRow}")
-                    ->getNumberFormat()
-                    ->setFormatCode('#,##0');
-            },
-        ];
+        return $this->query;
     }
 
     public function headings(): array
     {
+        $periodeAwal = request('dari_tanggal', 'Semua Data');
+        $periodeAkhir = request('sampai_tanggal', 'Semua Data');
+
+        $periodeTeks = "Periode: ";
+        if ($periodeAwal === 'Semua Data' && $periodeAkhir === 'Semua Data') {
+            $periodeTeks .= "Semua Data";
+        } else {
+            $periodeTeks .= $periodeAwal . " s/d " . $periodeAkhir;
+        }
+
         return [
-            ['LAPORAN DETAIL OBAT'],
-            ['Bamboomedia'],
-            ['Tanggal: ' . now()->format('d/m/Y')],
+            ['LAPORAN DETAIL OBAT KUNJUNGAN'],
+            [$periodeTeks],
             [''],
             [
                 'Kode Pelanggan',
                 'Nama Pasien',
-                'Tanggal Kunjungan',
                 'Kode Obat',
                 'Nama Obat',
                 'Jumlah',
                 'Harga',
                 'Total Harga',
-                'Status Pembayaran'
-            ],
+                'Tanggal Kunjungan',
+                'Status Pembayaran',
+            ]
         ];
     }
 
@@ -110,49 +66,138 @@ class DetailObatExport implements FromCollection, WithHeadings, WithMapping, Wit
         return [
             $row->kode_pelanggan,
             $row->nama_pasien,
-            $row->tanggal_kunjungan->format('d/m/Y H:i'),
             $row->kode_obat,
             $row->nama_obat,
             $row->jumlah,
-            $row->harga,
-            $row->total_harga,
-            $row->status_pembayaran
+            'Rp ' . number_format($row->harga, 0, ',', '.'),
+            'Rp ' . number_format($row->total_harga, 0, ',', '.'),
+            $row->tanggal_kunjungan ? $row->tanggal_kunjungan->format('d/m/Y H:i') : '-',
+            $row->status_pembayaran,
+        ];
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 15,  // Kode Pelanggan
+            'B' => 25,  // Nama Pasien
+            'C' => 15,  // Kode Obat
+            'D' => 30,  // Nama Obat
+            'E' => 10,  // Jumlah
+            'F' => 20,  // Harga
+            'G' => 20,  // Total Harga
+            'H' => 15,  // Tanggal Kunjungan
+            'I' => 20,  // Status Pembayaran
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         $lastRow = $sheet->getHighestRow();
-        $lastColumn = $sheet->getHighestColumn();
+        $totalRow = $lastRow + 2; // Baris untuk total keseluruhan
+
+        // Merge cells untuk total keseluruhan
+        $sheet->mergeCells('A' . $totalRow . ':F' . $totalRow);
+
+        // Tambahkan text "Total Keseluruhan"
+        $sheet->setCellValue('A' . $totalRow, 'Total Keseluruhan:');
+
+        // Tambahkan nilai total
+        $sheet->setCellValue('G' . $totalRow, 'Rp ' . number_format($this->totalKeseluruhan, 0, ',', '.'));
+
+        // Style untuk total keseluruhan
+        $sheet->getStyle('A' . $totalRow . ':G' . $totalRow)->applyFromArray([
+            'font' => [
+                'bold' => true,
+            ],
+            'borders' => [
+                'outline' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                ],
+            ],
+        ]);
+
+        // Rata kanan untuk nilai total
+        $sheet->getStyle('G' . $totalRow)->applyFromArray([
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_RIGHT,
+            ],
+        ]);
+
+        // Rata kanan untuk label total
+        $sheet->getStyle('A' . $totalRow)->applyFromArray([
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_RIGHT,
+            ],
+        ]);
 
         // Style untuk judul
         $sheet->mergeCells('A1:I1');
         $sheet->mergeCells('A2:I2');
-        $sheet->mergeCells('A3:I3');
 
-        // Border style
-        $borderStyle = [
+        // Style untuk seluruh cell
+        $sheet->getStyle('A1:I' . ($sheet->getHighestRow()))->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
                 ],
             ],
-        ];
+        ]);
 
-        // Apply style untuk seluruh data
-        $sheet->getStyle('A1:I' . $lastRow)->applyFromArray($borderStyle);
+        // Style untuk header
+        $sheet->getStyle('A4:I4')->applyFromArray([
+            'font' => [
+                'bold' => true,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => [
+                    'rgb' => 'E2EFDA',
+                ],
+            ],
+        ]);
+
+        // Style untuk judul laporan
+        $sheet->getStyle('A1:A2')->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 14,
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+
+        // Style untuk konten
+        $sheet->getStyle('A4:I' . $sheet->getHighestRow())->applyFromArray([
+            'alignment' => [
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+
+        // Style untuk kolom jumlah, harga dan total (rata kanan)
+        $sheet->getStyle('E5:G' . $sheet->getHighestRow())->applyFromArray([
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_RIGHT,
+            ],
+        ]);
+
+        // Style untuk tanggal dan status (rata tengah)
+        $sheet->getStyle('H5:I' . $sheet->getHighestRow())->applyFromArray([
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+            ],
+        ]);
+
+        // Set tinggi baris untuk header
+        $sheet->getRowDimension(1)->setRowHeight(30);
+        $sheet->getRowDimension(2)->setRowHeight(25);
+        $sheet->getRowDimension(4)->setRowHeight(20);
+        $sheet->getRowDimension($totalRow)->setRowHeight(25);
 
         return [
-            1 => ['font' => ['bold' => true, 'size' => 16], 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
-            2 => ['font' => ['bold' => true, 'size' => 14], 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
-            3 => ['font' => ['bold' => true], 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
-            5 => ['font' => ['bold' => true], 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
-            'A5:I5' => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'color' => ['rgb' => 'E2EFDA']]],
+            1 => ['font' => ['bold' => true]],
         ];
-    }
-
-    public function title(): string
-    {
-        return 'Detail Obat';
     }
 }

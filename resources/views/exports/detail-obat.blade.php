@@ -64,8 +64,8 @@
 <body>
     <div class="header">
         <div class="title">LAPORAN DETAIL OBAT</div>
-        <div class="subtitle"> Bamboomedia</div>
-        <div class="date">Tanggal: {{ now()->format('d/m/Y') }}</div>
+        <div class="subtitle">Bamboomedia</div>
+        <div class="date">Periode: {{ $periode_awal }} s/d {{ $periode_akhir }}</div>
     </div>
 
     <table>
@@ -73,12 +73,12 @@
             <tr>
                 <th>Kode Pelanggan</th>
                 <th>Nama Pasien</th>
-                <th>Tanggal Kunjungan</th>
                 <th>Kode Obat</th>
                 <th>Nama Obat</th>
                 <th>Jumlah</th>
                 <th>Harga</th>
                 <th>Total Harga</th>
+                <th>Tanggal Kunjungan</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -87,12 +87,12 @@
             <tr>
                 <td>{{ $record->kode_pelanggan }}</td>
                 <td>{{ $record->nama_pasien }}</td>
-                <td>{{ $record->tanggal_kunjungan->format('d/m/Y H:i') }}</td>
                 <td>{{ $record->kode_obat }}</td>
                 <td>{{ $record->nama_obat }}</td>
-                <td>{{ $record->jumlah }}</td>
-                <td>Rp {{ number_format($record->harga, 0, ',', '.') }}</td>
-                <td>Rp {{ number_format($record->total_harga, 0, ',', '.') }}</td>
+                <td style="text-align: right;">{{ $record->jumlah }}</td>
+                <td style="text-align: right;">Rp {{ number_format($record->harga, 0, ',', '.') }}</td>
+                <td style="text-align: right;">Rp {{ number_format($record->total_harga, 0, ',', '.') }}</td>
+                <td>{{ $record->tanggal_kunjungan->format('d/m/Y H:i') }}</td>
                 <td>{{ $record->status_pembayaran }}</td>
             </tr>
             @endforeach

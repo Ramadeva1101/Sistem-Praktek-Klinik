@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class AdminPendapatanStats extends BaseWidget
 {
     protected static ?string $pollingInterval = '10s';
-    protected static ?int $sort = 3;
+    protected static ?int $sort = 2;
 
     public static function canView(): bool
     {

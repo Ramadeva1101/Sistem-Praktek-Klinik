@@ -73,6 +73,7 @@ class PasienResource extends Resource
                     ->label('Alamat')
                     ->searchable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->actions([
                 Tables\Actions\Action::make('buat_kunjungan')
                 ->label('Buat Kunjungan')

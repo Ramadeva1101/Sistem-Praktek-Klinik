@@ -1,0 +1,75 @@
+/* Background dan Container */
+.login-container {
+    @apply flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-100 to-amber-50;
+}
+
+.login-card {
+    @apply w-full max-w-md px-6 py-8 bg-white rounded-2xl shadow-xl;
+}
+
+/* Logo */
+.login-logo {
+    @apply w-32 h-32 mx-auto mb-8;
+}
+
+/* Heading */
+.login-heading {
+    @apply text-2xl font-bold text-center text-amber-900 mb-8;
+}
+
+/* Form Elements */
+.fi-btn {
+    @apply bg-amber-500 hover:bg-amber-600 focus:ring-amber-500/50 transition-all duration-200 ease-in-out !important;
+}
+
+.fi-btn:hover {
+    @apply transform scale-105;
+}
+
+.fi-input {
+    @apply focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 ease-in-out !important;
+}
+
+.fi-input:focus {
+    @apply transform scale-[1.02];
+}
+
+.fi-label {
+    @apply text-amber-900 !important;
+}
+
+/* Welcome Text */
+.welcome-text {
+    @apply mt-8 text-center text-sm text-gray-600;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .login-logo {
+        @apply w-24 h-24;
+    }
+
+    .login-heading {
+        @apply text-xl;
+    }
+
+    .login-card {
+        @apply max-w-sm;
+    }
+} 
