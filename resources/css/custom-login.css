@@ -1,0 +1,67 @@
+body, .fi-layout {
+    background-image: url('/img/login-bg.jpg') !important;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.fi-simple-layout {
+    background: transparent !important;
+}
+
+.fi-simple-main {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(8px);
+    border-radius: 15px !important;
+    padding: 2rem !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.fi-input-wrapper {
+    border: 2px solid #e9ecef !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.fi-input-wrapper:focus-within {
+    border-color: #3498db !important;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
+}
+
+.fi-btn {
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.fi-btn-primary {
+    background: #2980b9 !important;
+}
+
+.fi-btn-primary:hover {
+    background: #3498db !important;
+    transform: translateY(-2px);
+}
+
+.login #nav,
+.login #backtoblog {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.login #nav a,
+.login #backtoblog a {
+    color: #fff;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login #nav a:hover,
+.login #backtoblog a:hover {
+    color: #3498db;
+}

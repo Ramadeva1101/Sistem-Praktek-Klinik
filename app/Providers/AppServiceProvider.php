@@ -9,6 +9,9 @@ use Filament\Navigation\NavigationGroup;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Schema;
 use App\Filament\Widgets\AdminKunjunganChart;
+use Filament\Support\View\Components\ViewComponent;
+use Filament\Support\Facades\FilamentView;
+use Illuminate\Support\Facades\Blade;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -53,5 +56,31 @@ class AppServiceProvider extends ServiceProvider
         Filament::registerWidgets([
             AdminKunjunganChart::class,
         ]);
+
+        FilamentView::registerRenderHook(
+            'panels::auth.login.form.before',
+            fn (): string => '
+                <style>
+                    body {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .fi-layout {
+                        position: relative;
+                        background: url("'.asset('img/login-bg.jpg').'") !important;
+                        background-size: cover !important;
+                        background-position: center !important;
+                        background-repeat: no-repeat !important;
+                        min-height: 100vh !important;
+                    }
+                    .fi-simple-main {
+                        background: rgba(255, 255, 255, 0.95) !important;
+                        backdrop-filter: blur(10px);
+                        border-radius: 15px !important;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+                    }
+                </style>
+            '
+        );
     }
 }
